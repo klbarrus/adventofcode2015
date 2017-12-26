@@ -6,6 +6,7 @@ import sys
 nice = 0
 with open(sys.argv[1]) as f:
     for line in f:
+        line = line.rstrip("\n")
         # does not contain ab, cd, pq, xy
         if "ab" in line:
             continue
