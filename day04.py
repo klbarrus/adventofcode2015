@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # AdventOfCode 2015 Day 04
 
 import hashlib
