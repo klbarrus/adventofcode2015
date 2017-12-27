@@ -1,5 +1,5 @@
-#!/usr/bin/python3
-#AdventOfCode 2015 day 05 part 2
+#!/usr/bin/env python3
+# AdventOfCode 2015 Day 05 part 2
 
 import sys
 
