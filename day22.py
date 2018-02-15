@@ -12,32 +12,30 @@ SPELLS = {
 }
 
 INIT_GAME_STATE = {
+    'Spells': [],
     'PMana' : 500,
     'PHit' : 50,
-    'BHit' : 58,
-    'BDam' : 9,
+    'BHit' : 58,        # my puzzle input
+    'BDam' : 9,         # my puzzle input
     'Shield' : 0,
     'Poison' : 0,
     'Recharge' : 0,
     'TotalMana' : 0,
 }
 
-playerWin = []
-
-def done(gs):
-    rv = False      # need to keep going
-    if gs['PHit'] <= 0 or gs['BHit'] <= 0:
-        rv = True   # player or boss is dead
-    return rv
-
-def playerarmor(gs):
+def playerArmor(gs):
     if gs['Shield'] > 0:
         return 7
     else:
         return 0
 
-def printstats(gs):
-    armor = playerarmor(gs)
+def playerWin(gs):
+    if gs['PHit'] > 0 and gs['PMana'] >= 0 and gs['BHit'] <= 0:
+        return True
+    return False
+
+def printStats(gs):
+    armor = playerArmor(gs)
     print("- Player has {} hit points, {} armor, {} mana".format(gs['PHit'], armor, gs['PMana']))
     print("- Boss has {} hit points".format(gs['BHit']))
 
@@ -53,85 +51,90 @@ def applyEffects(gs):
     if gs['Shield'] > 0:
         gs['Shield'] -= 1
 
-def combat(sp, gs):
-    print("-- Player turn --")
-    printstats(gs)
-    print("Player casts {}".format(sp))
-
-# player turn
+def resolveCombatPlayer(sp, gs):
+#    print("-- Player turn --")
+#    printStats(gs)
+#    print("Player casts {}".format(sp))
     applyEffects(gs)
-
 # player casts a spell
     if sp == 'Drain':
-        gs['PMana'] -= 73
+        gs['PMana'] -= SPELLS['Drain']
         gs['PHit'] += 2
         gs['BHit'] -= 2
-        gs['TotalMana'] += 73
+        gs['TotalMana'] += SPELLS['Drain']
     elif sp == 'Magic Missile':
-        gs['PMana'] -= 53
+        gs['PMana'] -= SPELLS['Magic Missile']
         gs['BHit'] -= 4
-        gs['TotalMana'] += 53
+        gs['TotalMana'] += SPELLS['Magic Missile']
     elif sp == 'Poison':
-        if gs['Poison'] == 0:
-            gs['PMana'] -= 173
-            gs['Poison'] = 6
-            gs['TotalMana'] += 173
-        else:
-            return
+        gs['PMana'] -= SPELLS['Poison']
+        gs['Poison'] = 6
+        gs['TotalMana'] += SPELLS['Poison']
     elif sp == 'Recharge':
-        if gs['Recharge'] == 0:
-            gs['PMana'] -= 229
-            gs['Recharge'] = 5
-            gs['TotalMana'] += 229
-        else:
-            return
+        gs['PMana'] -= SPELLS['Recharge']
+        gs['Recharge'] = 5
+        gs['TotalMana'] += SPELLS['Recharge']
     elif sp == 'Shield':
-        if gs['Shield'] == 0:
-            gs['PMana'] -= 113
-            gs['Shield'] = 6
-            gs['TotalMana'] += 113
-        else:
-            return
+        gs['PMana'] -= SPELLS['Shield']
+        gs['Shield'] = 6
+        gs['TotalMana'] += SPELLS['Shield']
 
-# check for win/loss
-# ran out of mana; loss
-    if gs['PMana'] < 0:
-        return
-# boss is dead; win
-    if gs['BHit'] <= 0:
-        playerWin.append(gs['TotalMana'])
-        return
-
-# boss turn
-    print("-- Boss turn --")
-    printstats(gs)
-
+def resolveCombatBoss(gs):
+#    print("-- Boss turn --")
+#    printStats(gs)
     applyEffects(gs)
-    dam = max(gs['BDam'] - playerarmor(gs), 1)
+# boss attacks    
+    dam = max(gs['BDam'] - playerArmor(gs), 1)
     gs['PHit'] -= dam
-    print("Boss attacks for {} damage".format(dam))
+#    print("Boss attacks for {} damage".format(dam))
+
+# keep going until player or boss is dead, or player is out of mana
+def endCondition(gs):
+    if gs['PHit'] <= 0 or gs['PMana'] < 0 or gs['BHit'] <= 0:
+        return True
+    return False
     
-# check for win/loss
-# player dead; loss
-    if gs['PHit'] <= 0:
+def doCombat(sp, gs):
+    gs['Spells'].append(sp)
+    resolveCombatPlayer(sp, gs)
+    if endCondition(gs):
+        if playerWin(gs):
+            WIN.append(gs)
         return
+    resolveCombatBoss(gs)
+    if endCondition(gs):
+        if playerWin(gs):
+            WIN.append(gs)
+        return
+    castable = ['Drain', 'Magic Missile']
+    if gs['Poison'] == 0:
+        castable.append('Poison')
+    if gs['Recharge'] == 0:
+        castable.append('Recharge')
+    if gs['Shield'] == 0:
+        castable.append('Shield')
+    for i in castable:
+        up = copy.deepcopy(gs)
+        doCombat(i, up)
 
-# cast next round of spells
-    gs_update = copy.deepcopy(gs)
-    for sp in spells:
-        combat(sp, gs_update)        
-
-#minmana = 500
+WIN = []
 spells = sorted(SPELLS.keys())
-#gs = copy.deepcopy(INIT_GAME_STATE)
+gs = INIT_GAME_STATE
 for sp in spells:
-    combat(sp, INIT_GAME_STATE)
-#    if rv:
-#        print("total mana spent: {}".format(gs['TotalMana']))
-#    else:
-#        print("boss win")
+    up = copy.deepcopy(gs)
+    doCombat(sp, up)
 
-print("{}".format(playerWin))
+#print("winning game states:")
+#for i in WIN:
+#    print("---")    
+#    print("{}".format(i))
+#    print("")
 
-#for sp in spells:
-#    cast_spell(sp, 2)
+num = len(WIN)
+minmana = WIN[0]['TotalMana']
+for i in WIN:
+    if i['TotalMana'] < minmana:
+        minmana = i['TotalMana']
+
+print("{} ways for player to win".format(num))
+print("min mana for player win: {}".format(minmana))
