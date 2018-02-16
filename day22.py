@@ -20,7 +20,7 @@ INIT_GAME_STATE = {
     'Shield' : 0,
     'Poison' : 0,
     'Recharge' : 0,
-    'TotalMana' : 0,
+    'ManaUsed' : 0,
 }
 
 def playerArmor(gs):
@@ -58,26 +58,18 @@ def resolveCombatPlayer(sp, gs):
     applyEffects(gs)
 # player casts a spell
     if sp == 'Drain':
-        gs['PMana'] -= SPELLS['Drain']
         gs['PHit'] += 2
         gs['BHit'] -= 2
-        gs['TotalMana'] += SPELLS['Drain']
     elif sp == 'Magic Missile':
-        gs['PMana'] -= SPELLS['Magic Missile']
         gs['BHit'] -= 4
-        gs['TotalMana'] += SPELLS['Magic Missile']
     elif sp == 'Poison':
-        gs['PMana'] -= SPELLS['Poison']
         gs['Poison'] = 6
-        gs['TotalMana'] += SPELLS['Poison']
     elif sp == 'Recharge':
-        gs['PMana'] -= SPELLS['Recharge']
         gs['Recharge'] = 5
-        gs['TotalMana'] += SPELLS['Recharge']
     elif sp == 'Shield':
-        gs['PMana'] -= SPELLS['Shield']
         gs['Shield'] = 6
-        gs['TotalMana'] += SPELLS['Shield']
+    gs['PMana'] -= SPELLS[sp]
+    gs['ManaUsed'] += SPELLS[sp]
 
 def resolveCombatBoss(gs):
 #    print("-- Boss turn --")
@@ -130,11 +122,14 @@ for sp in spells:
 #    print("{}".format(i))
 #    print("")
 
-num = len(WIN)
-minmana = WIN[0]['TotalMana']
+#numwins = len(WIN)
+minmana = WIN[0]['ManaUsed']
+minstate = []
 for i in WIN:
-    if i['TotalMana'] < minmana:
-        minmana = i['TotalMana']
+    if i['ManaUsed'] < minmana:
+        minmana = i['ManaUsed']
+        minstate = i
 
-print("{} ways for player to win".format(num))
 print("min mana for player win: {}".format(minmana))
+print("min mana winning game:")
+print("{}".format(minstate))
