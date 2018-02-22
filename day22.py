@@ -51,10 +51,12 @@ def applyEffects(gs):
     if gs['Shield'] > 0:
         gs['Shield'] -= 1
 
-def resolveCombatPlayer(sp, gs):
+def resolveCombatPlayer(sp, gs, part2):
 #    print("-- Player turn --")
 #    printStats(gs)
 #    print("Player casts {}".format(sp))
+    if part2:
+        gs['PHit'] -= 1
     applyEffects(gs)
 # player casts a spell
     if sp == 'Drain':
@@ -85,51 +87,64 @@ def endCondition(gs):
     if gs['PHit'] <= 0 or gs['PMana'] < 0 or gs['BHit'] <= 0:
         return True
     return False
-    
-def doCombat(sp, gs):
-    gs['Spells'].append(sp)
-    resolveCombatPlayer(sp, gs)
+
+minmana = 999999
+mings = []
+
+def checkEndCondition(gs):
+    global minmana
+    global mings
     if endCondition(gs):
         if playerWin(gs):
-            WIN.append(gs)
+            if gs['ManaUsed'] < minmana:
+                minmana = gs['ManaUsed']
+                mings = gs
+                print("win with {} mana".format(minmana))
+        return True
+    return False
+
+def doCombat(sp, gs, part2):
+    gs['Spells'].append(sp)
+    resolveCombatPlayer(sp, gs, part2)
+    if checkEndCondition(gs):
         return
     resolveCombatBoss(gs)
-    if endCondition(gs):
-        if playerWin(gs):
-            WIN.append(gs)
+    if checkEndCondition(gs):
+        return
+# no need to continue searching along this path if we're already using 
+# more mana than a previously found win
+    if gs['ManaUsed'] > minmana:
         return
     castable = ['Drain', 'Magic Missile']
-    if gs['Poison'] == 0:
+# spells with a remaining duration of 1 or less can be recast
+# (spells can be cast in the same turn they expire)
+    if gs['Poison'] <= 1:
         castable.append('Poison')
-    if gs['Recharge'] == 0:
+    if gs['Recharge'] <= 1:
         castable.append('Recharge')
-    if gs['Shield'] == 0:
-        castable.append('Shield')
+    if gs['Shield'] <= 1:
+        castable.append('Shield')     
     for i in castable:
         up = copy.deepcopy(gs)
-        doCombat(i, up)
+        doCombat(i, up, part2)
 
-WIN = []
 spells = sorted(SPELLS.keys())
 gs = INIT_GAME_STATE
 for sp in spells:
     up = copy.deepcopy(gs)
-    doCombat(sp, up)
-
-#print("winning game states:")
-#for i in WIN:
-#    print("---")    
-#    print("{}".format(i))
-#    print("")
-
-#numwins = len(WIN)
-minmana = WIN[0]['ManaUsed']
-minstate = []
-for i in WIN:
-    if i['ManaUsed'] < minmana:
-        minmana = i['ManaUsed']
-        minstate = i
+    doCombat(sp, up, False)
 
 print("min mana for player win: {}".format(minmana))
 print("min mana winning game:")
-print("{}".format(minstate))
+print("{}".format(mings))
+print("")
+
+minmana = 99999
+gs = INIT_GAME_STATE
+for sp in spells:
+    up = copy.deepcopy(gs)
+    doCombat(sp, up, True)
+
+print("min mana for player win in part 2: {}".format(minmana))
+print("min mana winning game in part 2:")
+print("{}".format(mings))
